@@ -128,7 +128,6 @@
     }
     .hint{color:var(--muted);font-weight:850;font-size:13px;margin-top:6px}
 
-    /* ===================== “More/Less” board ===================== */
     .pvBoard{
       background:rgba(255,255,255,.55);
       border-radius:18px;
@@ -186,7 +185,6 @@
       z-index:1;
     }
 
-    /* --- Animation layer + discs --- */
     .animLayer{
       position:absolute;
       inset:0;
@@ -212,14 +210,11 @@
     .pvDisc.te{ background: rgba(245,158,11,.40); }
     .pvDisc.on{ background: rgba(56,189,248,.40); }
 
-    .pvDisc.cross{
-      border-color: rgba(225,29,72,.55);
-    }
+    .pvDisc.cross{ border-color: rgba(225,29,72,.55); }
     .pvDisc.cross::after{
       content:"";
       position:absolute;
-      width:70%;
-      height:4px;
+      width:70%; height:4px;
       background: rgba(225,29,72,.90);
       border-radius:999px;
       transform: rotate(35deg);
@@ -228,8 +223,7 @@
     .pvDisc.cross::before{
       content:"";
       position:absolute;
-      width:70%;
-      height:4px;
+      width:70%; height:4px;
       background: rgba(225,29,72,.90);
       border-radius:999px;
       transform: rotate(-35deg);
@@ -239,7 +233,6 @@
     /* ✅ Mobile drag fix */
     #mlLine, #mlAnsMarker { touch-action:none; }
 
-    /* ===================== Right side card ===================== */
     .sideCard{
       background:#fff;
       border:1px solid #e2e8f0;
@@ -329,7 +322,6 @@
       align-items:center;
     }
 
-    /* ✅ COLOURED OPTION CARDS (only for sequence bank) */
     #seqBank .chip{
       min-width:100px;height:48px;
       border-radius:14px;
@@ -367,7 +359,6 @@
     }
     .ruleBubble.show{display:block}
 
-    /* confetti */
     .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999}
     .c{
       position:absolute;top:-20px;
@@ -746,12 +737,15 @@
   const mlCurve = document.getElementById('mlCurve');
   const mlCurveText = document.getElementById('mlCurveText');
 
-  // Force touch drag to behave on mobile
   mlLine.style.touchAction = "none";
 
   const X1 = 70, X2 = 830;
   const BASE_W = 140;
   let mlMin = 0, mlMax = 0, mlTick = 1;
+
+  // keep PV board 4-digit only
+  const ML_MIN = 1000;
+  const ML_MAX = 9999;
 
   let mlBase = 3926;
   let mlStep = 10;
@@ -819,8 +813,6 @@
       tick.setAttribute('stroke-linecap','round');
       mlTicks.appendChild(tick);
 
-      // ✅ IMPORTANT FIX:
-      // Only show END labels (min and max). No middle label (prevents “giving away” the answer).
       if(i===0 || i===steps){
         const t = document.createElementNS("http://www.w3.org/2000/svg","text");
         t.setAttribute('x', x);
@@ -835,60 +827,54 @@
     }
   }
 
- function renderDots(num){
-  function fill(el, digit, cls, label){
-    el.innerHTML = "";
+  function renderDots(num){
+    function fill(el, digit, cls, label){
+      el.innerHTML = "";
+      if(digit === 0) return;
 
-    // ✅ If digit is 0, show NOTHING (no ghost disc)
-    if(digit === 0) return;
+      const show = Math.min(digit, 9);
+      for(let i=0;i<show;i++){
+        const d = document.createElement('div');
+        d.className = `dot ${cls}`;
+        d.textContent = label;
+        el.appendChild(d);
+      }
+      if(digit > 9){
+        const more = document.createElement('div');
+        more.className = `dot ${cls}`;
+        more.textContent = `+${digit-9}`;
+        el.appendChild(more);
+      }
+    }
 
-    const show = Math.min(digit, 9);
-    for(let i=0;i<show;i++){
-      const d = document.createElement('div');
-      d.className = `dot ${cls}`;
-      d.textContent = label;
-      el.appendChild(d);
-    }
-    if(digit > 9){
-      const more = document.createElement('div');
-      more.className = `dot ${cls}`;
-      more.textContent = `+${digit-9}`;
-      el.appendChild(more);
-    }
+    const th = Math.floor(num/1000)%10;
+    const hu = Math.floor(num/100)%10;
+    const te = Math.floor(num/10)%10;
+    const on = num%10;
+
+    thDigit.textContent = th;
+    huDigit.textContent = hu;
+    teDigit.textContent = te;
+    onDigit.textContent = on;
+
+    fill(thDots, th, 'th', '1000');
+    fill(huDots, hu, 'hu', '100');
+    fill(teDots, te, 'te', '10');
+    fill(onDots, on, 'on', '1');
   }
 
-  const th = Math.floor(num/1000)%10;
-  const hu = Math.floor(num/100)%10;
-  const te = Math.floor(num/10)%10;
-  const on = num%10;
-
-  thDigit.textContent = th;
-  huDigit.textContent = hu;
-  teDigit.textContent = te;
-  onDigit.textContent = on;
-
-  fill(thDots, th, 'th', '1000');
-  fill(huDots, hu, 'hu', '100');
-  fill(teDots, te, 'te', '10');
-  fill(onDots, on, 'on', '1');
-}
-
-
-  // ✅ Determine unit + how many discs to add/remove for step
   function stepToUnitAndCount(step){
     const unit = (step >= 1000) ? 1000 : (step >= 100) ? 100 : (step >= 10) ? 10 : 1;
     let count = Math.round(step / unit);
     count = clamp(count, 1, 9);
     return { unit, count };
   }
-
   function targetInfoForUnit(unit){
     if(unit === 1000) return { cls:"th", label:"1000", el: thDots };
     if(unit === 100)  return { cls:"hu", label:"100",  el: huDots };
     if(unit === 10)   return { cls:"te", label:"10",   el: teDots };
     return { cls:"on", label:"1", el: onDots };
   }
-
   function getRandomPointInEl(el){
     const r = el.getBoundingClientRect();
     const pr = mlPvBoard.getBoundingClientRect();
@@ -896,7 +882,6 @@
     const y = (r.top  - pr.top)  + 14 + Math.random() * Math.max(10, (r.height - 28));
     return {x, y};
   }
-
   function clearAnimLayer(){ mlAnimLayer.innerHTML = ""; }
 
   async function animatePlaceValueChange(){
@@ -1013,30 +998,35 @@
     mlDir = (choice === "auto") ? (Math.random()<0.5 ? "more" : "less") : choice;
     mlStep = parseInt(mlStepSelect.value,10);
 
-    // keep base consistent with the step remainder so the line makes sense
-    // (e.g., +10: numbers end with same ones digit; +50: same last two digits; etc.)
-    mlBase = randInt(1000, 9999);
-    if(mlDir === "less" && mlBase - mlStep < 0) mlBase = mlStep + 1000;
+    // keep BOTH base and answer within 4 digits
+    if(mlDir === "more"){
+      const hi = ML_MAX - mlStep;
+      mlBase = randInt(ML_MIN, Math.max(ML_MIN, hi));
+    }else{
+      const lo = ML_MIN + mlStep;
+      mlBase = randInt(Math.min(lo, ML_MAX), ML_MAX);
+    }
     mlAnswer = (mlDir === "more") ? (mlBase + mlStep) : (mlBase - mlStep);
 
-    // number line tick is the step
     mlTick = mlStep;
 
     const padSteps = 4;
-    const lo = Math.min(mlBase, mlAnswer) - padSteps*mlTick;
-    const hi = Math.max(mlBase, mlAnswer) + padSteps*mlTick;
+    const loLine = Math.min(mlBase, mlAnswer) - padSteps*mlTick;
+    const hiLine = Math.max(mlBase, mlAnswer) + padSteps*mlTick;
 
-    // ✅ Ensure the line endpoints keep the same remainder pattern (so step=2,5,20,50 etc always draggable & reachable)
-    // We keep endpoints on the same "grid" as the base by shifting to the nearest value with same remainder.
+    // ✅ FIX: keep endpoints on SAME remainder grid, even if loLine < 0
     const rem = ((mlBase % mlTick) + mlTick) % mlTick;
     function alignToRemainder(x){
       const r = ((x % mlTick) + mlTick) % mlTick;
       return x + (rem - r);
     }
 
-    mlMin = Math.max(0, alignToRemainder(lo));
-    mlMax = alignToRemainder(hi);
-    if(mlMax <= mlMin) mlMax = mlMin + mlTick * 10;
+    let minCand = alignToRemainder(loLine);
+    while(minCand < 0) minCand += mlTick;   // <-- key fix (keeps remainder)
+    mlMin = minCand;
+
+    mlMax = alignToRemainder(hiLine);
+    while(mlMax <= mlMin) mlMax += mlTick;
 
     mlStepHint.textContent = mlStep;
 
@@ -1063,10 +1053,19 @@
 
     renderDots(mlBase);
 
-    const wrong1 = mlAnswer + (Math.random()<0.5 ? mlTick : -mlTick);
-    const wrong2 = mlAnswer + (Math.random()<0.5 ? 2*mlTick : -2*mlTick);
-    let opts = [...new Set([mlAnswer, Math.max(0,wrong1), Math.max(0,wrong2)])];
-    while(opts.length < 3) opts.push(mlAnswer + opts.length*mlTick);
+    // keep distractors within 0–9999
+    const clampML = (n)=> clamp(n, 0, ML_MAX);
+
+    const wrong1 = clampML(mlAnswer + (Math.random()<0.5 ? mlTick : -mlTick));
+    const wrong2 = clampML(mlAnswer + (Math.random()<0.5 ? 2*mlTick : -2*mlTick));
+    let opts = [...new Set([mlAnswer, wrong1, wrong2])];
+
+    let k = 1;
+    while(opts.length < 3){
+      const candidate = clampML(mlAnswer + (k*mlTick) * (Math.random()<0.5 ? 1 : -1));
+      opts = [...new Set([...opts, candidate])];
+      k++;
+    }
     opts = shuffle(opts);
 
     mlFinalPick.value = "";
@@ -1118,7 +1117,6 @@
 
   mlShowBtn.addEventListener('click', animatePlaceValueChange);
 
-  // ✅ If teacher changes step or more/less mode, auto-generate a new question (so 2,5,20,50 etc always works)
   mlStepSelect.addEventListener('change', setMLQuestion);
   mlMoreLess.addEventListener('change', setMLQuestion);
 
