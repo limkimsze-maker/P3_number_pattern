@@ -128,6 +128,7 @@
     }
     .hint{color:var(--muted);font-weight:850;font-size:13px;margin-top:6px}
 
+    /* ===================== “More/Less” board ===================== */
     .pvBoard{
       background:rgba(255,255,255,.55);
       border-radius:18px;
@@ -173,7 +174,6 @@
     .dot.hu{background:rgba(244,114,182,.35)}
     .dot.te{background:rgba(245,158,11,.35)}
     .dot.on{background:rgba(56,189,248,.35)}
-    .dot.ghost{background:transparent;border:1px dashed rgba(15,23,42,.28);color:rgba(15,23,42,.55)}
 
     .lineWrap{
       margin-top:12px;
@@ -185,6 +185,7 @@
       z-index:1;
     }
 
+    /* --- Animation layer + discs --- */
     .animLayer{
       position:absolute;
       inset:0;
@@ -214,7 +215,8 @@
     .pvDisc.cross::after{
       content:"";
       position:absolute;
-      width:70%; height:4px;
+      width:70%;
+      height:4px;
       background: rgba(225,29,72,.90);
       border-radius:999px;
       transform: rotate(35deg);
@@ -223,7 +225,8 @@
     .pvDisc.cross::before{
       content:"";
       position:absolute;
-      width:70%; height:4px;
+      width:70%;
+      height:4px;
       background: rgba(225,29,72,.90);
       border-radius:999px;
       transform: rotate(-35deg);
@@ -233,6 +236,7 @@
     /* ✅ Mobile drag fix */
     #mlLine, #mlAnsMarker { touch-action:none; }
 
+    /* ===================== Right side card ===================== */
     .sideCard{
       background:#fff;
       border:1px solid #e2e8f0;
@@ -322,6 +326,7 @@
       align-items:center;
     }
 
+    /* ✅ COLOURED OPTION CARDS (only for sequence bank) */
     #seqBank .chip{
       min-width:100px;height:48px;
       border-radius:14px;
@@ -359,6 +364,7 @@
     }
     .ruleBubble.show{display:block}
 
+    /* confetti */
     .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999}
     .c{
       position:absolute;top:-20px;
@@ -813,6 +819,7 @@
       tick.setAttribute('stroke-linecap','round');
       mlTicks.appendChild(tick);
 
+      // only show END labels
       if(i===0 || i===steps){
         const t = document.createElementNS("http://www.w3.org/2000/svg","text");
         t.setAttribute('x', x);
@@ -831,7 +838,6 @@
     function fill(el, digit, cls, label){
       el.innerHTML = "";
       if(digit === 0) return;
-
       const show = Math.min(digit, 9);
       for(let i=0;i<show;i++){
         const d = document.createElement('div');
@@ -869,12 +875,14 @@
     count = clamp(count, 1, 9);
     return { unit, count };
   }
+
   function targetInfoForUnit(unit){
     if(unit === 1000) return { cls:"th", label:"1000", el: thDots };
     if(unit === 100)  return { cls:"hu", label:"100",  el: huDots };
     if(unit === 10)   return { cls:"te", label:"10",   el: teDots };
     return { cls:"on", label:"1", el: onDots };
   }
+
   function getRandomPointInEl(el){
     const r = el.getBoundingClientRect();
     const pr = mlPvBoard.getBoundingClientRect();
@@ -882,6 +890,7 @@
     const y = (r.top  - pr.top)  + 14 + Math.random() * Math.max(10, (r.height - 28));
     return {x, y};
   }
+
   function clearAnimLayer(){ mlAnimLayer.innerHTML = ""; }
 
   async function animatePlaceValueChange(){
@@ -1008,25 +1017,28 @@
     }
     mlAnswer = (mlDir === "more") ? (mlBase + mlStep) : (mlBase - mlStep);
 
+    // number line tick is the step
     mlTick = mlStep;
 
     const padSteps = 4;
     const loLine = Math.min(mlBase, mlAnswer) - padSteps*mlTick;
     const hiLine = Math.max(mlBase, mlAnswer) + padSteps*mlTick;
 
-    // ✅ FIX: keep endpoints on SAME remainder grid, even if loLine < 0
+    // ✅ CRITICAL FIX (works for -1000, +500, etc):
+    // Align min/max to the SAME remainder class as mlBase, and if negative, bump by mlTick
     const rem = ((mlBase % mlTick) + mlTick) % mlTick;
-    function alignToRemainder(x){
+    function alignToBaseRemainder(x){
       const r = ((x % mlTick) + mlTick) % mlTick;
       return x + (rem - r);
     }
 
-    let minCand = alignToRemainder(loLine);
-    while(minCand < 0) minCand += mlTick;   // <-- key fix (keeps remainder)
+    let minCand = alignToBaseRemainder(loLine);
+    while(minCand < 0) minCand += mlTick;  // keep remainder while making non-negative
     mlMin = minCand;
 
-    mlMax = alignToRemainder(hiLine);
-    while(mlMax <= mlMin) mlMax += mlTick;
+    let maxCand = alignToBaseRemainder(hiLine);
+    while(maxCand <= mlMin) maxCand += mlTick;
+    mlMax = maxCand;
 
     mlStepHint.textContent = mlStep;
 
@@ -1053,9 +1065,7 @@
 
     renderDots(mlBase);
 
-    // keep distractors within 0–9999
     const clampML = (n)=> clamp(n, 0, ML_MAX);
-
     const wrong1 = clampML(mlAnswer + (Math.random()<0.5 ? mlTick : -mlTick));
     const wrong2 = clampML(mlAnswer + (Math.random()<0.5 ? 2*mlTick : -2*mlTick));
     let opts = [...new Set([mlAnswer, wrong1, wrong2])];
