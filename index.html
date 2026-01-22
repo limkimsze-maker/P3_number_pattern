@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Patterns Playground — More/Less & Number Train Sequences</title>
+  <style>
+    :root{
+      --bg1:#e0f2fe;
+      --bg2:#dcfce7;
+      --bg:#f6fbff;
+      --card:#ffffff;
+      --ink:#0f172a;
+      --muted:#64748b;
+
+      --good:#16a34a;
+      --bad:#e11d48;
+      --accent:#0ea5e9;
+      --pink:#ec4899;
+
+      --panel:#dff1f2;
+      --shadow:0 14px 30px rgba(2,6,23,.10);
+      --r:22px;
+
+      --th:#22c55e; /* thousands */
+      --hu:#f472b6; /* hundreds  */
+      --te:#f59e0b; /* tens      */
+      --on:#38bdf8; /* ones      */
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(1200px 600px at 15% 0%, var(--bg1) 0%, transparent 55%),
+        radial-gradient(900px 520px at 100% 20%, var(--bg2) 0%, transparent 55%),
+        var(--bg);
+      color:var(--ink);
+      padding:14px;
+    }
+    .wrap{max-width:1050px;margin:0 auto}
+    .card{
+      background:var(--card);
+      border:1px solid #eef2ff;
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .topbar{
+      padding:14px 16px;
+      border-bottom:1px solid #eef2ff;
+      display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .badge{
+      width:40px;height:40px;border-radius:999px;
+      display:grid;place-items:center;
+      background:linear-gradient(135deg,#bbf7d0,#86efac);
+      border:2px solid var(--good);
+      color:#065f46;font-weight:1000;
+    }
+    .title{font-weight:1000;font-size:18px;line-height:1}
+    .sub{font-weight:850;color:var(--muted);font-size:13px;margin-top:4px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .pill{
+      display:flex;gap:8px;align-items:center;
+      padding:8px 10px;border-radius:999px;
+      border:1px solid #e2e8f0;background:#fff;
+      font-weight:950;color:var(--muted);
+    }
+    .pill b{color:var(--ink)}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{
+      appearance:none;border:0;
+      padding:10px 14px;border-radius:14px;
+      background:var(--accent);color:#fff;
+      font-weight:1000;cursor:pointer;
+      box-shadow:0 10px 18px rgba(14,165,233,.25);
+    }
+    button.secondary{
+      background:#f1f5f9;color:var(--ink);
+      box-shadow:none;border:1px solid #e2e8f0;
+    }
+    button.ghost{
+      background:transparent;color:var(--ink);
+      box-shadow:none;border:1px dashed #cbd5e1;
+    }
+    button:disabled{
+      opacity:.55; cursor:not-allowed;
+      box-shadow:none;
+    }
+
+    .tabs{
+      display:flex;gap:10px;flex-wrap:wrap;
+      padding:12px 16px;border-bottom:1px solid #eef2ff;
+      background:linear-gradient(180deg,#ffffff, #fbfdff);
+    }
+    .tab{
+      padding:10px 14px;border-radius:999px;
+      border:1px solid #e2e8f0;background:#fff;
+      font-weight:1000;color:var(--muted);
+      cursor:pointer;user-select:none;
+    }
+    .tab.active{
+      color:#065f46;border-color:#86efac;background:#f0fdf4;
+    }
+
+    .content{padding:16px}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:14px;
+    }
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+
+    .panel{
+      background:var(--panel);
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:22px;
+      padding:14px;
+      overflow:hidden;
+    }
+    .panel h2{
+      margin:0 0 10px;
+      font-size:20px;
+      font-weight:1000;
+    }
+    .hint{color:var(--muted);font-weight:850;font-size:13px;margin-top:6px}
+
+    /* ===================== “More/Less” board ===================== */
+    .pvBoard{
+      background:rgba(255,255,255,.55);
+      border-radius:18px;
+      padding:12px;
+      border:1px solid rgba(15,23,42,.08);
+      position:relative;
+    }
+    .pvHeader{display:flex;gap:10px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
+    .qBig{
+      font-size:clamp(18px,2.4vw,26px);
+      font-weight:1000;
+      margin:0;
+      line-height:1.15;
+    }
+    .qBig .em{color:var(--pink)}
+    .qBig .n{color:#1d4ed8}
+    .qBig .step{color:#0ea5e9}
+    .row2{font-weight:950;color:var(--muted);font-size:13px;margin-top:6px}
+
+    .pvCols{display:grid;grid-template-columns: repeat(4, 1fr);gap:10px; position:relative; z-index:1;}
+    .col{
+      background:#fff;border-radius:16px;border:1px solid rgba(15,23,42,.08);overflow:hidden;
+    }
+    .col .head{
+      padding:8px 10px;
+      font-weight:1000;
+      color:#0f172a;
+      display:flex;justify-content:space-between;align-items:center;
+      border-bottom:1px solid rgba(15,23,42,.06);
+    }
+    .col .head small{font-weight:1000;color:var(--muted)}
+    .col .body{
+      padding:10px;min-height:88px;
+      display:flex;gap:8px;flex-wrap:wrap;align-content:flex-start;
+    }
+    .dot{
+      width:24px;height:24px;border-radius:999px;
+      display:grid;place-items:center;
+      font-size:11px;font-weight:1000;color:#0b1220;
+      border:1px solid rgba(15,23,42,.18);
+    }
+    .dot.th{background:rgba(34,197,94,.35)}
+    .dot.hu{background:rgba(244,114,182,.35)}
+    .dot.te{background:rgba(245,158,11,.35)}
+    .dot.on{background:rgba(56,189,248,.35)}
+    .dot.ghost{background:transparent;border:1px dashed rgba(15,23,42,.28);color:rgba(15,23,42,.55)}
+
+    .lineWrap{
+      margin-top:12px;
+      background:rgba(255,255,255,.55);
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:18px;
+      padding:10px 10px 8px;
+      position:relative;
+      z-index:1;
+    }
+
+    /* --- Animation layer + discs --- */
+    .animLayer{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index:5;
+      overflow:hidden;
+      border-radius:18px;
+    }
+    .pvDisc{
+      position:absolute;
+      width:30px;height:30px;border-radius:999px;
+      display:grid;place-items:center;
+      font-weight:1000;
+      font-size:11px;
+      border:2px solid rgba(15,23,42,.18);
+      box-shadow:0 10px 20px rgba(2,6,23,.12);
+      transform:translate(-50%,-50%);
+      opacity:0;
+      user-select:none;
+    }
+    .pvDisc.th{ background: rgba(34,197,94,.40); }
+    .pvDisc.hu{ background: rgba(244,114,182,.40); }
+    .pvDisc.te{ background: rgba(245,158,11,.40); }
+    .pvDisc.on{ background: rgba(56,189,248,.40); }
+
+    .pvDisc.cross{
+      border-color: rgba(225,29,72,.55);
+    }
+    .pvDisc.cross::after{
+      content:"";
+      position:absolute;
+      width:70%;
+      height:4px;
+      background: rgba(225,29,72,.90);
+      border-radius:999px;
+      transform: rotate(35deg);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.35);
+    }
+    .pvDisc.cross::before{
+      content:"";
+      position:absolute;
+      width:70%;
+      height:4px;
+      background: rgba(225,29,72,.90);
+      border-radius:999px;
+      transform: rotate(-35deg);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.35);
+    }
+
+    /* ✅ Mobile drag fix */
+    #mlLine, #mlAnsMarker { touch-action:none; }
+
+    /* ===================== Right side card ===================== */
+    .sideCard{
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:22px;
+      padding:14px;
+      box-shadow:0 10px 18px rgba(2,6,23,.06);
+    }
+    .sideCard h3{margin:0 0 10px;font-size:18px;font-weight:1000}
+    .controlRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+    .select{
+      font:inherit;
+      padding:10px 12px;
+      border-radius:14px;
+      border:2px solid #e2e8f0;
+      background:#f8fafc;
+      font-weight:1000;
+      cursor:pointer;
+      outline:none;
+      min-width:160px;
+    }
+    .answerPick{
+      font:inherit;
+      padding:10px 12px;
+      border-radius:14px;
+      border:2px solid #bbf7d0;
+      background:#f0fdf4;
+      font-weight:1000;
+      outline:none;
+      cursor:pointer;
+      min-width:200px;
+    }
+    .answerPick.placeholder{border-color:#cbd5e1;background:#f8fafc;color:#0f172a}
+    .answerPick.good{border-color:#86efac;background:#dcfce7;color:#065f46}
+
+    .msg{
+      margin-top:10px;
+      padding:12px 14px;
+      border-radius:16px;
+      border:1px solid #e2e8f0;
+      background:#f8fafc;
+      font-weight:1000;
+    }
+    .msg.good{background:#f0fdf4;border-color:#bbf7d0;color:#065f46}
+    .msg.bad{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+    .msg.info{background:#eff6ff;border-color:#bfdbfe;color:#0b3b74}
+
+    /* ===================== Sequence game ===================== */
+    .seqBoard{
+      background:rgba(255,255,255,.55);
+      border:1px solid rgba(15,23,42,.08);
+      border-radius:18px;
+      padding:12px;
+    }
+    .seqTitle{
+      font-size:clamp(18px,2.3vw,26px);
+      font-weight:1000;
+      margin:0 0 10px;
+    }
+    .track{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-start;
+    }
+    .box{
+      width:96px;height:52px;
+      border-radius:14px;
+      border:2px solid #a7f3d0;
+      background:#e9f6e7;
+      display:grid;place-items:center;
+      font-weight:1000;font-size:20px;
+      position:relative;
+      user-select:none;
+    }
+    .box.blank{
+      background:#f8fafc;border-color:#cbd5e1;color:#0f172a;
+      border-style:dashed;
+    }
+    .box.locked{
+      background:#fff;border-style:solid;border-color:#e2e8f0;color:#0f172a;
+    }
+
+    .bank{
+      margin-top:12px;
+      display:flex;gap:10px;flex-wrap:wrap;
+      align-items:center;
+    }
+
+    /* ✅ COLOURED OPTION CARDS (only for sequence bank) */
+    #seqBank .chip{
+      min-width:100px;height:48px;
+      border-radius:14px;
+      border:2px solid rgba(15,23,42,.10);
+      background: var(--chipBg, #ffffff);
+      color: var(--chipInk, #0f172a);
+      display:grid;place-items:center;
+      font-weight:1000;font-size:20px;
+      cursor:grab;
+      box-shadow:0 10px 18px rgba(2,6,23,.08);
+      user-select:none;
+      position:relative;
+      padding-left:18px;
+      overflow:hidden;
+    }
+    #seqBank .chip:active{cursor:grabbing; transform: translateY(1px);}
+    #seqBank .chip::before{
+      content:"";
+      position:absolute;
+      left:8px; top:9px; bottom:9px;
+      width:8px;
+      border-radius:999px;
+      background: var(--beforeBg, rgba(15,23,42,.14));
+    }
+
+    .ruleBubble{
+      margin-top:10px;
+      background:#e9f6e7;
+      border:1px solid #bbf7d0;
+      border-radius:18px;
+      padding:10px 12px;
+      font-weight:950;
+      color:#14532d;
+      display:none;
+    }
+    .ruleBubble.show{display:block}
+
+    /* confetti */
+    .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999}
+    .c{
+      position:absolute;top:-20px;
+      width:10px;height:14px;border-radius:3px;
+      opacity:.95;
+      animation:fall linear forwards;
+    }
+    @keyframes fall{ to{ transform:translateY(110vh) rotate(720deg); } }
+
+    .footer{margin-top:12px;text-align:right;color:#64748b;font-weight:800;font-size:13px}
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="topbar">
+      <div class="brand">
+        <div class="badge">P3</div>
+        <div>
+          <div class="title">Patterns Playground</div>
+          <div class="sub">More/Less jumps + “Number Train” sequences (drag & drop).</div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="pill">Score: <b id="score">0</b></div>
+        <div class="pill">Streak: <b id="streak">0</b></div>
+        <div class="pill">Mode: <b id="modeLabel">More / Less</b></div>
+      </div>
+
+      <div class="btns">
+        <button id="newBtn" class="secondary" type="button">New Question</button>
+        <button id="checkBtn" type="button">Check</button>
+        <button id="resetBtn" class="ghost" type="button">Reset Score</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="moreless">More / Less Adventure</div>
+      <div class="tab" data-tab="sequence">Number Train Sequences</div>
+    </div>
+
+    <div class="content">
+      <!-- ===================== MORE/LESS MODE ===================== -->
+      <div id="panelMoreLess">
+        <div class="grid">
+          <div class="panel">
+            <h2>🎯 More / Less Adventure</h2>
+
+            <div class="pvBoard" id="mlPvBoard">
+              <div class="animLayer" id="mlAnimLayer"></div>
+
+              <div class="pvHeader">
+                <div>
+                  <p class="qBig" id="mlQuestion"></p>
+                  <div class="row2" id="mlSub">Drag the blue marker on the number line to the answer.</div>
+                </div>
+              </div>
+
+              <div class="pvCols" id="mlPvCols">
+                <div class="col">
+                  <div class="head"><span>Thousands</span><small id="thDigit">3</small></div>
+                  <div class="body" id="thDots"></div>
+                </div>
+                <div class="col">
+                  <div class="head"><span>Hundreds</span><small id="huDigit">9</small></div>
+                  <div class="body" id="huDots"></div>
+                </div>
+                <div class="col">
+                  <div class="head"><span>Tens</span><small id="teDigit">2</small></div>
+                  <div class="body" id="teDots"></div>
+                </div>
+                <div class="col">
+                  <div class="head"><span>Ones</span><small id="onDigit">6</small></div>
+                  <div class="body" id="onDots"></div>
+                </div>
+              </div>
+
+              <div class="lineWrap">
+                <svg id="mlLine" viewBox="0 0 900 150" width="100%" height="150" aria-label="number line">
+                  <rect x="0" y="0" width="900" height="150" rx="18" fill="rgba(255,255,255,.55)"></rect>
+
+                  <line x1="70" y1="82" x2="830" y2="82" stroke="#0f172a" stroke-width="6" stroke-linecap="round"/>
+                  <polygon points="60,82 78,71 78,93" fill="#0f172a"></polygon>
+                  <polygon points="840,82 822,71 822,93" fill="#0f172a"></polygon>
+
+                  <g id="mlTicks"></g>
+                  <g id="mlLabels"></g>
+
+                  <g id="mlBaseMarker">
+                    <rect x="0" y="10" width="140" height="38" rx="14" fill="#e9f6e7" stroke="#16a34a" stroke-width="3"></rect>
+                    <text id="mlBaseLabel" x="70" y="36" text-anchor="middle" font-size="22" font-weight="1000" fill="#065f46">3926</text>
+                    <path id="mlBaseStem" d="M70 50 L70 72" stroke="#16a34a" stroke-width="6" stroke-linecap="round"></path>
+                  </g>
+
+                  <g id="mlAnsMarker" cursor="grab">
+                    <rect x="0" y="100" width="140" height="38" rx="14" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="3"></rect>
+                    <text id="mlAnsLabel" x="70" y="126" text-anchor="middle" font-size="22" font-weight="1000" fill="#075985">?</text>
+                    <path id="mlAnsStem" d="M70 98 L70 92" stroke="#0ea5e9" stroke-width="6" stroke-linecap="round"></path>
+                    <polygon id="mlAnsArrow" points="70,84 61,96 79,96" fill="#0ea5e9"></polygon>
+                  </g>
+
+                  <path id="mlCurve" d="" fill="none" stroke="#ec4899" stroke-width="5" stroke-linecap="round"/>
+                  <text id="mlCurveText" x="0" y="0" font-size="20" font-weight="1000" fill="#ec4899"></text>
+                </svg>
+
+                <div class="hint">
+                  Tip: The step is <b id="mlStepHint">10</b>. Drag the blue marker to the answer.
+                </div>
+              </div>
+            </div>
+
+            <div class="hint">When the marker is correct, click <b>Show Place Value Change</b> to see the discs animate.</div>
+          </div>
+
+          <div class="sideCard">
+            <h3>✅ Your Answers</h3>
+
+            <div class="controlRow">
+              <label style="font-weight:950;color:var(--muted)">Choose “more/less”:</label>
+              <select id="mlMoreLess" class="select" aria-label="select more or less">
+                <option value="auto" selected>Random (more OR less)</option>
+                <option value="more">More</option>
+                <option value="less">Less</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <label style="font-weight:950;color:var(--muted)">Choose step:</label>
+              <select id="mlStepSelect" class="select" aria-label="select step">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+                <option value="1000">1000</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <label style="font-weight:950;color:var(--muted)">Final answer (select):</label>
+              <select id="mlFinalPick" class="answerPick placeholder" aria-label="final answer select">
+                <option value="" selected>__________</option>
+                <option value="A" id="mlOptA">Option A</option>
+                <option value="B" id="mlOptB">Option B</option>
+                <option value="C" id="mlOptC">Option C</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <button id="mlShowBtn" class="secondary" type="button" disabled>Show Place Value Change</button>
+            </div>
+
+            <div id="mlMsg" class="msg">
+              Drag the blue marker, then choose the final answer. Press <b>Check</b>.
+            </div>
+
+            <div class="hint">
+              “More”: swoosh + discs fly in (correct count). “Less”: click + crossed discs disappear (correct count).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SEQUENCE MODE ===================== -->
+      <div id="panelSequence" style="display:none">
+        <div class="grid">
+          <div class="panel">
+            <h2>🚂 Number Train Sequences</h2>
+
+            <div class="seqBoard">
+              <p class="seqTitle" id="seqQuestion">Fill in the missing numbers. Arrange the pattern correctly!</p>
+              <div class="hint" style="margin-bottom:10px">Drag the coloured number cards into the empty boxes. (Click a box to clear it.)</div>
+
+              <div class="track" id="seqTrack"></div>
+              <div class="bank" id="seqBank"></div>
+
+              <div class="ruleBubble" id="seqRuleBubble"></div>
+            </div>
+
+            <div class="hint">Inspired by your sequence-box pictures (e.g. +5, +10, +100), turned into a train track game.</div>
+          </div>
+
+          <div class="sideCard">
+            <h3>⚙️ Sequence Settings</h3>
+
+            <div class="controlRow">
+              <label style="font-weight:950;color:var(--muted)">Pattern type:</label>
+              <select id="seqType" class="select">
+                <option value="const" selected>Constant step (e.g., +5, -10)</option>
+                <option value="alt">Alternating (e.g., +5, +10, +5, +10)</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <label style="font-weight:950;color:var(--muted)">Difficulty:</label>
+              <select id="seqDiff" class="select">
+                <option value="easy" selected>Easy (2 blanks)</option>
+                <option value="med">Medium (3 blanks)</option>
+                <option value="hard">Hard (4 blanks)</option>
+              </select>
+            </div>
+
+            <div class="controlRow">
+              <button id="revealRuleBtn" class="secondary" type="button">Reveal Rule</button>
+              <button id="hideRuleBtn" class="ghost" type="button">Hide Rule</button>
+            </div>
+
+            <div id="seqMsg" class="msg">Fill the blanks, then press <b>Check</b>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">Designed by Lim Kim Sze © 2026</div>
+    </div>
+  </div>
+</div>
+
+<div class="confetti" id="confetti"></div>
+
+<script>
+(() => {
+  // ---------- Shared score ----------
+  let score = 0, streak = 0;
+  const scoreEl = document.getElementById('score');
+  const streakEl = document.getElementById('streak');
+  const modeLabel = document.getElementById('modeLabel');
+
+  function bumpScore(ok){
+    if(ok){ score++; streak++; }
+    else { streak = 0; }
+    scoreEl.textContent = score;
+    streakEl.textContent = streak;
+  }
+
+  // ---------- Confetti ----------
+  const confettiHost = document.getElementById('confetti');
+  function confettiBurst(){
+    confettiHost.innerHTML = "";
+    const N = 120;
+    for(let i=0;i<N;i++){
+      const d = document.createElement('div');
+      d.className = 'c';
+      d.style.left = (Math.random()*100) + 'vw';
+      d.style.animationDuration = (1.8 + Math.random()*1.8) + 's';
+      d.style.animationDelay = (Math.random()*0.15) + 's';
+      d.style.background = `hsl(${Math.floor(Math.random()*360)}, 90%, 60%)`;
+      d.style.width = (8 + Math.random()*8) + 'px';
+      d.style.height = (10 + Math.random()*10) + 'px';
+      confettiHost.appendChild(d);
+    }
+    setTimeout(()=> confettiHost.innerHTML="", 2500);
+  }
+
+  // ---------- Tabs ----------
+  const tabs = [...document.querySelectorAll('.tab')];
+  const panelMoreLess = document.getElementById('panelMoreLess');
+  const panelSequence = document.getElementById('panelSequence');
+
+  function setTab(name){
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    panelMoreLess.style.display = (name === 'moreless') ? '' : 'none';
+    panelSequence.style.display = (name === 'sequence') ? '' : 'none';
+    modeLabel.textContent = (name === 'moreless') ? 'More / Less' : 'Sequences';
+  }
+  tabs.forEach(t => t.addEventListener('click', ()=> setTab(t.dataset.tab)));
+
+  // ---------- Utilities ----------
+  const clamp = (n,a,b)=> Math.max(a, Math.min(b,n));
+  const randInt = (a,b)=> a + Math.floor(Math.random()*(b-a+1));
+  const shuffle = (arr)=>{
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  };
+  const sleep = (ms)=> new Promise(r=>setTimeout(r, ms));
+
+  // =========================================================
+  //  SOUND (WebAudio) – swoosh + click
+  // =========================================================
+  let AC = null;
+  function getAC(){
+    if(!AC){
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if(AC.state === "suspended") AC.resume();
+    return AC;
+  }
+
+  function playClick(){
+    const ac = getAC();
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(900, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(250, ac.currentTime + 0.05);
+    g.gain.setValueAtTime(0.0001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.20, ac.currentTime + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.08);
+    o.connect(g).connect(ac.destination);
+    o.start();
+    o.stop(ac.currentTime + 0.09);
+  }
+
+  function playSwoosh(){
+    const ac = getAC();
+    const bufferSize = 2 * ac.sampleRate;
+    const noiseBuffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) output[i] = (Math.random()*2-1);
+
+    const noise = ac.createBufferSource();
+    noise.buffer = noiseBuffer;
+
+    const filter = ac.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(1200, ac.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(250, ac.currentTime + 0.25);
+
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.35, ac.currentTime + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.28);
+
+    noise.connect(filter).connect(g).connect(ac.destination);
+    noise.start();
+    noise.stop(ac.currentTime + 0.30);
+  }
+
+  // =========================================================
+  //  MODE 1: MORE / LESS ADVENTURE
+  // =========================================================
+  const thDigit = document.getElementById('thDigit');
+  const huDigit = document.getElementById('huDigit');
+  const teDigit = document.getElementById('teDigit');
+  const onDigit = document.getElementById('onDigit');
+
+  const thDots = document.getElementById('thDots');
+  const huDots = document.getElementById('huDots');
+  const teDots = document.getElementById('teDots');
+  const onDots = document.getElementById('onDots');
+
+  const mlMoreLess = document.getElementById('mlMoreLess');
+  const mlStepSelect = document.getElementById('mlStepSelect');
+  const mlFinalPick = document.getElementById('mlFinalPick');
+  const mlOptA = document.getElementById('mlOptA');
+  const mlOptB = document.getElementById('mlOptB');
+  const mlOptC = document.getElementById('mlOptC');
+  const mlMsg = document.getElementById('mlMsg');
+  const mlQuestion = document.getElementById('mlQuestion');
+  const mlSub = document.getElementById('mlSub');
+  const mlStepHint = document.getElementById('mlStepHint');
+  const mlShowBtn = document.getElementById('mlShowBtn');
+
+  const mlPvBoard = document.getElementById('mlPvBoard');
+  const mlAnimLayer = document.getElementById('mlAnimLayer');
+
+  const mlLine = document.getElementById('mlLine');
+  const mlTicks = document.getElementById('mlTicks');
+  const mlLabels = document.getElementById('mlLabels');
+  const mlBaseMarker = document.getElementById('mlBaseMarker');
+  const mlBaseLabel = document.getElementById('mlBaseLabel');
+  const mlBaseStem = document.getElementById('mlBaseStem');
+  const mlAnsMarker = document.getElementById('mlAnsMarker');
+  const mlAnsLabel = document.getElementById('mlAnsLabel');
+  const mlAnsStem = document.getElementById('mlAnsStem');
+  const mlAnsArrow = document.getElementById('mlAnsArrow');
+  const mlCurve = document.getElementById('mlCurve');
+  const mlCurveText = document.getElementById('mlCurveText');
+
+  // Force touch drag to behave on mobile
+  mlLine.style.touchAction = "none";
+
+  const X1 = 70, X2 = 830;
+  const BASE_W = 140;
+  let mlMin = 0, mlMax = 0, mlTick = 1;
+
+  let mlBase = 3926;
+  let mlStep = 10;
+  let mlDir = "more";
+  let mlAnswer = 3936;
+
+  const mlState = {
+    ans:{ value:0, dragging:false, pid:null },
+    atAnswer:false,
+    changeShown:false
+  };
+
+  function valueToX(v){
+    const t = (v - mlMin) / (mlMax - mlMin);
+    return X1 + t*(X2 - X1);
+  }
+  function xToValue(x){
+    const t = (x - X1) / (X2 - X1);
+    return mlMin + t*(mlMax - mlMin);
+  }
+  function snap(v){
+    return Math.round((v - mlMin)/mlTick)*mlTick + mlMin;
+  }
+
+  function setMarker(g, labelEl, stemEl, arrowEl, yType, v, showText=true){
+    v = clamp(snap(v), mlMin, mlMax);
+    const cx = valueToX(v);
+    const gx = clamp(cx - BASE_W/2, X1 - BASE_W/2, X2 - BASE_W/2);
+    g.setAttribute('transform', `translate(${gx} 0)`);
+
+    const localX = cx - gx;
+    if(showText) labelEl.textContent = v;
+
+    if(yType === "down"){
+      stemEl.setAttribute('d', `M${localX} 50 L${localX} 72`);
+    } else {
+      stemEl.setAttribute('d', `M${localX} 98 L${localX} 92`);
+      arrowEl.setAttribute('points', `${localX},84 ${localX-9},96 ${localX+9},96`);
+    }
+    return v;
+  }
+
+  function drawMLLine(){
+    mlTicks.innerHTML = "";
+    mlLabels.innerHTML = "";
+
+    const steps = Math.round((mlMax - mlMin)/mlTick);
+    const majorEvery = 5;
+
+    for(let i=0;i<=steps;i++){
+      const v = mlMin + i*mlTick;
+      const x = valueToX(v);
+
+      const isMajor = (i===0)||(i===steps)||(i%majorEvery===0);
+      const h = isMajor ? 24 : 14;
+      const w = isMajor ? 6 : 5;
+
+      const tick = document.createElementNS("http://www.w3.org/2000/svg","line");
+      tick.setAttribute('x1', x);
+      tick.setAttribute('x2', x);
+      tick.setAttribute('y1', 82 - h/2);
+      tick.setAttribute('y2', 82 + h/2);
+      tick.setAttribute('stroke', '#0f172a');
+      tick.setAttribute('stroke-width', w);
+      tick.setAttribute('stroke-linecap','round');
+      mlTicks.appendChild(tick);
+
+      // ✅ IMPORTANT FIX:
+      // Only show END labels (min and max). No middle label (prevents “giving away” the answer).
+      if(i===0 || i===steps){
+        const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+        t.setAttribute('x', x);
+        t.setAttribute('y', 134);
+        t.setAttribute('text-anchor','middle');
+        t.setAttribute('font-size','28');
+        t.setAttribute('font-weight','1000');
+        t.setAttribute('fill','#0f172a');
+        t.textContent = v;
+        mlLabels.appendChild(t);
+      }
+    }
+  }
+
+ function renderDots(num){
+  function fill(el, digit, cls, label){
+    el.innerHTML = "";
+
+    // ✅ If digit is 0, show NOTHING (no ghost disc)
+    if(digit === 0) return;
+
+    const show = Math.min(digit, 9);
+    for(let i=0;i<show;i++){
+      const d = document.createElement('div');
+      d.className = `dot ${cls}`;
+      d.textContent = label;
+      el.appendChild(d);
+    }
+    if(digit > 9){
+      const more = document.createElement('div');
+      more.className = `dot ${cls}`;
+      more.textContent = `+${digit-9}`;
+      el.appendChild(more);
+    }
+  }
+
+  const th = Math.floor(num/1000)%10;
+  const hu = Math.floor(num/100)%10;
+  const te = Math.floor(num/10)%10;
+  const on = num%10;
+
+  thDigit.textContent = th;
+  huDigit.textContent = hu;
+  teDigit.textContent = te;
+  onDigit.textContent = on;
+
+  fill(thDots, th, 'th', '1000');
+  fill(huDots, hu, 'hu', '100');
+  fill(teDots, te, 'te', '10');
+  fill(onDots, on, 'on', '1');
+}
+
+
+  // ✅ Determine unit + how many discs to add/remove for step
+  function stepToUnitAndCount(step){
+    const unit = (step >= 1000) ? 1000 : (step >= 100) ? 100 : (step >= 10) ? 10 : 1;
+    let count = Math.round(step / unit);
+    count = clamp(count, 1, 9);
+    return { unit, count };
+  }
+
+  function targetInfoForUnit(unit){
+    if(unit === 1000) return { cls:"th", label:"1000", el: thDots };
+    if(unit === 100)  return { cls:"hu", label:"100",  el: huDots };
+    if(unit === 10)   return { cls:"te", label:"10",   el: teDots };
+    return { cls:"on", label:"1", el: onDots };
+  }
+
+  function getRandomPointInEl(el){
+    const r = el.getBoundingClientRect();
+    const pr = mlPvBoard.getBoundingClientRect();
+    const x = (r.left - pr.left) + 14 + Math.random() * Math.max(10, (r.width - 28));
+    const y = (r.top  - pr.top)  + 14 + Math.random() * Math.max(10, (r.height - 28));
+    return {x, y};
+  }
+
+  function clearAnimLayer(){ mlAnimLayer.innerHTML = ""; }
+
+  async function animatePlaceValueChange(){
+    if(!mlState.atAnswer || mlState.changeShown) return;
+
+    mlState.changeShown = true;
+    mlShowBtn.disabled = true;
+    clearAnimLayer();
+
+    const { unit, count } = stepToUnitAndCount(mlStep);
+    const t = targetInfoForUnit(unit);
+
+    if(mlDir === "more"){
+      playSwoosh();
+
+      const discs = [];
+      for(let i=0;i<count;i++){
+        const p = getRandomPointInEl(t.el);
+        const d = document.createElement('div');
+        d.className = `pvDisc ${t.cls}`;
+        d.textContent = t.label;
+        d.style.left = p.x + "px";
+        d.style.top  = p.y + "px";
+        mlAnimLayer.appendChild(d);
+        discs.push({d, p});
+      }
+
+      discs.forEach(({d, p}, i)=>{
+        const fromX = p.x - 220 - Math.random()*60;
+        const fromY = p.y - 140 - Math.random()*60;
+
+        d.animate([
+          { transform:`translate(-50%,-50%) translate(${fromX-p.x}px, ${fromY-p.y}px) scale(.6) rotate(-18deg)`, opacity:0 },
+          { transform:`translate(-50%,-50%) translate(${(fromX-p.x)*0.15}px, ${(fromY-p.y)*0.15}px) scale(1.05) rotate(6deg)`, opacity:1, offset:0.8 },
+          { transform:`translate(-50%,-50%) translate(0px,0px) scale(1) rotate(0deg)`, opacity:1 }
+        ], {
+          duration: 520 + i*55,
+          easing: 'cubic-bezier(.18,.86,.22,1)',
+          fill: 'forwards'
+        });
+      });
+
+      await sleep(650 + count*55);
+      renderDots(mlAnswer);
+
+      [...mlAnimLayer.querySelectorAll('.pvDisc')].forEach((d,i)=>{
+        d.animate([
+          { opacity:1, transform:'translate(-50%,-50%) scale(1)' },
+          { opacity:0, transform:'translate(-50%,-50%) scale(.85)' }
+        ], { duration: 360, delay: i*35, easing:'ease-out', fill:'forwards' });
+      });
+      await sleep(450);
+      clearAnimLayer();
+
+    } else {
+      playClick();
+
+      const discs = [];
+      for(let i=0;i<count;i++){
+        const p = getRandomPointInEl(t.el);
+        const d = document.createElement('div');
+        d.className = `pvDisc ${t.cls} cross`;
+        d.textContent = t.label;
+        d.style.left = p.x + "px";
+        d.style.top  = p.y + "px";
+        mlAnimLayer.appendChild(d);
+        discs.push({d, p});
+      }
+
+      discs.forEach(({d}, i)=>{
+        d.animate([
+          { opacity:0, transform:'translate(-50%,-50%) scale(.7)' },
+          { opacity:1, transform:'translate(-50%,-50%) scale(1.08)' },
+          { opacity:1, transform:'translate(-50%,-50%) scale(1)' }
+        ], { duration: 220, delay: i*40, easing:'ease-out', fill:'forwards' });
+      });
+
+      await sleep(220 + count*40);
+
+      discs.forEach(({d}, i)=>{
+        d.animate([
+          { opacity:1, transform:'translate(-50%,-50%) scale(1)' },
+          { opacity:1, transform:'translate(-50%,-50%) scale(.95)', offset:0.25 },
+          { opacity:0, transform:'translate(-50%,-50%) scale(.35)' }
+        ], { duration: 420, delay: i*35, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards' });
+      });
+
+      await sleep(460 + count*35);
+      clearAnimLayer();
+      renderDots(mlAnswer);
+    }
+
+    mlMsg.className = "msg info";
+    mlMsg.textContent = `Nice! Now press Check. (${mlStep} ${mlDir} than ${mlBase} = ${mlAnswer})`;
+  }
+
+  function updateMarkerStatusUI(){
+    mlState.atAnswer = (mlState.ans.value === mlAnswer);
+    mlShowBtn.disabled = !(mlState.atAnswer && !mlState.changeShown);
+
+    if(mlState.atAnswer && !mlState.changeShown){
+      mlMsg.className = "msg info";
+      mlMsg.textContent = "✅ Marker is correct! Click “Show Place Value Change”. Then choose final answer and press Check.";
+    }
+  }
+
+  function setMLQuestion(){
+    mlState.atAnswer = false;
+    mlState.changeShown = false;
+    mlShowBtn.disabled = true;
+    clearAnimLayer();
+
+    const choice = mlMoreLess.value;
+    mlDir = (choice === "auto") ? (Math.random()<0.5 ? "more" : "less") : choice;
+    mlStep = parseInt(mlStepSelect.value,10);
+
+    // keep base consistent with the step remainder so the line makes sense
+    // (e.g., +10: numbers end with same ones digit; +50: same last two digits; etc.)
+    mlBase = randInt(1000, 9999);
+    if(mlDir === "less" && mlBase - mlStep < 0) mlBase = mlStep + 1000;
+    mlAnswer = (mlDir === "more") ? (mlBase + mlStep) : (mlBase - mlStep);
+
+    // number line tick is the step
+    mlTick = mlStep;
+
+    const padSteps = 4;
+    const lo = Math.min(mlBase, mlAnswer) - padSteps*mlTick;
+    const hi = Math.max(mlBase, mlAnswer) + padSteps*mlTick;
+
+    // ✅ Ensure the line endpoints keep the same remainder pattern (so step=2,5,20,50 etc always draggable & reachable)
+    // We keep endpoints on the same "grid" as the base by shifting to the nearest value with same remainder.
+    const rem = ((mlBase % mlTick) + mlTick) % mlTick;
+    function alignToRemainder(x){
+      const r = ((x % mlTick) + mlTick) % mlTick;
+      return x + (rem - r);
+    }
+
+    mlMin = Math.max(0, alignToRemainder(lo));
+    mlMax = alignToRemainder(hi);
+    if(mlMax <= mlMin) mlMax = mlMin + mlTick * 10;
+
+    mlStepHint.textContent = mlStep;
+
+    mlQuestion.innerHTML = `What is <span class="step">${mlStep}</span> <span class="em">${mlDir}</span> than <span class="n">${mlBase}</span>?`;
+    mlSub.textContent = "Drag the blue marker on the number line to the answer.";
+
+    drawMLLine();
+
+    mlBaseLabel.textContent = mlBase;
+    setMarker(mlBaseMarker, mlBaseLabel, mlBaseStem, null, "down", mlBase, false);
+
+    mlState.ans.value = mlBase;
+    setMarker(mlAnsMarker, mlAnsLabel, mlAnsStem, mlAnsArrow, "up", mlBase, true);
+    mlAnsLabel.textContent = "?";
+
+    const x0 = valueToX(mlBase);
+    const x1 = valueToX(mlAnswer);
+    const mid = (x0+x1)/2;
+    mlCurve.setAttribute('d', `M${x0} 70 Q ${mid} 44 ${x1} 70`);
+    mlCurveText.setAttribute('x', mid);
+    mlCurveText.setAttribute('y', 38);
+    mlCurveText.setAttribute('text-anchor','middle');
+    mlCurveText.textContent = (mlDir === "more") ? `+${mlStep}` : `-${mlStep}`;
+
+    renderDots(mlBase);
+
+    const wrong1 = mlAnswer + (Math.random()<0.5 ? mlTick : -mlTick);
+    const wrong2 = mlAnswer + (Math.random()<0.5 ? 2*mlTick : -2*mlTick);
+    let opts = [...new Set([mlAnswer, Math.max(0,wrong1), Math.max(0,wrong2)])];
+    while(opts.length < 3) opts.push(mlAnswer + opts.length*mlTick);
+    opts = shuffle(opts);
+
+    mlFinalPick.value = "";
+    mlFinalPick.classList.add('placeholder');
+    mlFinalPick.classList.remove('good');
+
+    mlOptA.textContent = opts[0]; mlOptA.value = String(opts[0]);
+    mlOptB.textContent = opts[1]; mlOptB.value = String(opts[1]);
+    mlOptC.textContent = opts[2]; mlOptC.value = String(opts[2]);
+
+    mlMsg.className = "msg";
+    mlMsg.innerHTML = `Drag the blue marker, then choose the final answer. Press <b>Check</b>.`;
+  }
+
+  function mlPointerToSvgX(evt){
+    const pt = mlLine.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    return pt.matrixTransform(mlLine.getScreenCTM().inverse()).x;
+  }
+
+  mlAnsMarker.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    mlAnsMarker.setPointerCapture(e.pointerId);
+    mlState.ans.dragging = true;
+    mlState.ans.pid = e.pointerId;
+    mlAnsMarker.setAttribute('cursor','grabbing');
+  });
+  mlAnsMarker.addEventListener('pointermove', (e)=>{
+    if(!mlState.ans.dragging) return;
+    const x = mlPointerToSvgX(e);
+    const v = setMarker(mlAnsMarker, mlAnsLabel, mlAnsStem, mlAnsArrow, "up", xToValue(x), true);
+    mlState.ans.value = v;
+    mlAnsLabel.textContent = v;
+  });
+  function endDrag(e){
+    if(mlState.ans.pid !== e.pointerId) return;
+    mlState.ans.dragging = false;
+    mlState.ans.pid = null;
+    mlAnsMarker.setAttribute('cursor','grab');
+    updateMarkerStatusUI();
+  }
+  mlAnsMarker.addEventListener('pointerup', endDrag);
+  mlAnsMarker.addEventListener('pointercancel', endDrag);
+
+  mlFinalPick.addEventListener('change', ()=>{
+    if(mlFinalPick.value) mlFinalPick.classList.remove('placeholder');
+    else mlFinalPick.classList.add('placeholder');
+  });
+
+  mlShowBtn.addEventListener('click', animatePlaceValueChange);
+
+  // ✅ If teacher changes step or more/less mode, auto-generate a new question (so 2,5,20,50 etc always works)
+  mlStepSelect.addEventListener('change', setMLQuestion);
+  mlMoreLess.addEventListener('change', setMLQuestion);
+
+  function checkMoreLess(){
+    const okLine = (mlState.ans.value === mlAnswer);
+    const picked = mlFinalPick.value ? Number(mlFinalPick.value) : null;
+    const okPick = (picked === mlAnswer);
+
+    if(okLine && okPick){
+      mlFinalPick.classList.add('good');
+      mlMsg.className = "msg good";
+      mlMsg.textContent = `✅ Correct! ${mlStep} ${mlDir} than ${mlBase} is ${mlAnswer}. Well done!`;
+      bumpScore(true);
+      confettiBurst();
+      return true;
+    }else{
+      mlFinalPick.classList.remove('good');
+      mlMsg.className = "msg bad";
+      const parts = [];
+      if(!okLine) parts.push("Check the blue marker on the number line.");
+      if(!picked) parts.push("Choose the final answer.");
+      else if(!okPick) parts.push("Check your selected answer.");
+      mlMsg.textContent = `❌ Not yet. ${parts.join(" ")}`;
+      bumpScore(false);
+      return false;
+    }
+  }
+
+  // =========================================================
+  //  MODE 2: NUMBER TRAIN SEQUENCES
+  // =========================================================
+  const seqTrack = document.getElementById('seqTrack');
+  const seqBank = document.getElementById('seqBank');
+  const seqQuestion = document.getElementById('seqQuestion');
+  const seqType = document.getElementById('seqType');
+  const seqDiff = document.getElementById('seqDiff');
+  const seqMsg = document.getElementById('seqMsg');
+  const seqRuleBubble = document.getElementById('seqRuleBubble');
+  const revealRuleBtn = document.getElementById('revealRuleBtn');
+  const hideRuleBtn = document.getElementById('hideRuleBtn');
+
+  let seq = [];
+  let blanks = new Set();
+  let bankVals = [];
+  let ruleText = "";
+
+  function chooseRule(){
+    const type = seqType.value;
+    const constSteps = [5,10,100,-5,-10,-100,1,-1,20,-20,1000,-1000];
+    const altPairs = [
+      [5,10],[10,5],[5,-5],[10,-10],
+      [100,10],[10,100],
+      [5,5],[10,10],
+      [1000,100], [100,1000]
+    ];
+
+    if(type === "const"){
+      const step = constSteps[Math.floor(Math.random()*constSteps.length)];
+      ruleText = (step>0) ? `+${step} each time` : `${step} each time`;
+      return { type:"const", step };
+    }else{
+      const [a,b] = altPairs[Math.floor(Math.random()*altPairs.length)];
+      ruleText = `alternate: ${a>=0?`+${a}`:a}, then ${b>=0?`+${b}`:b}`;
+      return { type:"alt", a, b };
+    }
+  }
+
+  function buildSequence(){
+    const blankCount = (seqDiff.value === "easy") ? 2 : (seqDiff.value === "med") ? 3 : 4;
+    const rule = chooseRule();
+    const len = 9;
+
+    let start = randInt(200, 9000);
+    if(rule.type === "const" && rule.step < 0) start = randInt(800, 9999);
+    if(rule.type === "alt") start = randInt(500, 9000);
+
+    seq = [start];
+    for(let i=1;i<len;i++){
+      let next;
+      if(rule.type === "const"){
+        next = seq[i-1] + rule.step;
+      }else{
+        const step = (i%2===1) ? rule.a : rule.b;
+        next = seq[i-1] + step;
+      }
+      if(next < 0) next = 0;
+      seq.push(next);
+    }
+
+    blanks = new Set();
+    const indices = [...Array(len).keys()].slice(1);
+    const pick = shuffle(indices);
+    for(let i=0;i<blankCount;i++) blanks.add(pick[i]);
+
+    bankVals = shuffle([...blanks].map(i => seq[i]));
+
+    seqQuestion.textContent = "Fill in the missing numbers to complete the pattern.";
+    seqRuleBubble.textContent = `Rule: ${ruleText}`;
+    seqRuleBubble.classList.remove('show');
+
+    renderSeqUI();
+    seqMsg.className = "msg";
+    seqMsg.innerHTML = `Drag the coloured number cards into the empty boxes. Then press <b>Check</b>.`;
+  }
+
+  function renderSeqUI(){
+    seqTrack.innerHTML = "";
+    seqBank.innerHTML = "";
+
+    for(let i=0;i<seq.length;i++){
+      const b = document.createElement('div');
+      b.className = 'box';
+      b.dataset.index = String(i);
+
+      if(blanks.has(i)){
+        b.classList.add('blank');
+        b.textContent = "_____";
+        b.dataset.value = "";
+      }else{
+        b.classList.add('locked');
+        b.textContent = String(seq[i]);
+        b.dataset.value = String(seq[i]);
+      }
+
+      b.addEventListener('dragover', (e)=>{
+        if(!b.classList.contains('blank')) return;
+        e.preventDefault();
+        b.style.outline = "3px dashed rgba(22,163,74,.55)";
+      });
+      b.addEventListener('dragleave', ()=> b.style.outline = "none");
+
+      b.addEventListener('drop', (e)=>{
+        if(!b.classList.contains('blank')) return;
+        e.preventDefault();
+        b.style.outline = "none";
+        const val = e.dataTransfer.getData('text/plain');
+        if(!val) return;
+
+        const blanksNow = [...seqTrack.querySelectorAll('.box.blank')];
+        const already = blanksNow.some(x => x.dataset.value === val);
+
+        if(already){
+          const from = blanksNow.find(x => x.dataset.value === val);
+          if(from && from !== b){
+            const tmpVal = b.dataset.value;
+            const tmpText = b.textContent;
+
+            b.dataset.value = val;
+            b.textContent = val;
+
+            from.dataset.value = tmpVal || "";
+            from.textContent = tmpVal ? tmpText : "_____";
+          }
+        }else{
+          b.dataset.value = val;
+          b.textContent = val;
+        }
+      });
+
+      b.addEventListener('click', ()=>{
+        if(!b.classList.contains('blank')) return;
+        b.dataset.value = "";
+        b.textContent = "_____";
+      });
+
+      seqTrack.appendChild(b);
+    }
+
+    bankVals.forEach((v, idx)=>{
+      const c = document.createElement('div');
+      c.className = 'chip';
+      c.textContent = String(v);
+      c.draggable = true;
+      c.dataset.value = String(v);
+
+      const hue = (idx * 55) % 360;
+      c.style.setProperty('--chipBg', `hsl(${hue} 90% 92%)`);
+      c.style.setProperty('--chipInk', `hsl(${hue} 55% 22%)`);
+      c.style.setProperty('--beforeBg', `hsl(${hue} 85% 55%)`);
+
+      c.addEventListener('dragstart', (e)=>{
+        e.dataTransfer.setData('text/plain', c.dataset.value);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      seqBank.appendChild(c);
+    });
+  }
+
+  function checkSequence(){
+    const blankBoxes = [...seqTrack.querySelectorAll('.box.blank')];
+    if(blankBoxes.some(b => !b.dataset.value)){
+      seqMsg.className = "msg bad";
+      seqMsg.textContent = "❌ Not yet. Fill in all the blanks first.";
+      bumpScore(false);
+      return false;
+    }
+
+    let ok = true;
+    blankBoxes.forEach(b=>{
+      const i = Number(b.dataset.index);
+      const v = Number(b.dataset.value);
+      if(v !== seq[i]) ok = false;
+    });
+
+    if(ok){
+      seqMsg.className = "msg good";
+      seqMsg.textContent = "✅ Correct! You completed the pattern. Well done!";
+      bumpScore(true);
+      confettiBurst();
+      return true;
+    }else{
+      seqMsg.className = "msg bad";
+      seqMsg.textContent = "❌ Not yet. Check the pattern jumps and try again.";
+      bumpScore(false);
+      return false;
+    }
+  }
+
+  revealRuleBtn.addEventListener('click', ()=> seqRuleBubble.classList.add('show'));
+  hideRuleBtn.addEventListener('click', ()=> seqRuleBubble.classList.remove('show'));
+
+  // =========================================================
+  //  Global buttons
+  // =========================================================
+  const newBtn = document.getElementById('newBtn');
+  const checkBtn = document.getElementById('checkBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  function newQuestion(){
+    if(panelMoreLess.style.display !== "none") setMLQuestion();
+    else buildSequence();
+  }
+  function check(){
+    if(panelMoreLess.style.display !== "none") checkMoreLess();
+    else checkSequence();
+  }
+
+  newBtn.addEventListener('click', newQuestion);
+  checkBtn.addEventListener('click', check);
+  resetBtn.addEventListener('click', ()=>{
+    score = 0; streak = 0;
+    scoreEl.textContent = "0";
+    streakEl.textContent = "0";
+    mlMsg.className = "msg";
+    mlMsg.textContent = "Score reset. Press New Question to start again!";
+    seqMsg.className = "msg";
+    seqMsg.textContent = "Score reset. Press New Question to start again!";
+  });
+
+  // init
+  setTab('moreless');
+  setMLQuestion();
+  buildSequence();
+})();
+</script>
+</body>
+</html>
