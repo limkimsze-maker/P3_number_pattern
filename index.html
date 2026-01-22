@@ -29,6 +29,7 @@
     }
 
     *{box-sizing:border-box}
+    html,body{height:100%}
     body{
       margin:0;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -38,6 +39,9 @@
         var(--bg);
       color:var(--ink);
       padding:14px;
+      padding-bottom:max(14px, env(safe-area-inset-bottom));
+      overscroll-behavior: contain;
+      -webkit-tap-highlight-color: transparent;
     }
     .wrap{max-width:1050px;margin:0 auto}
     .card{
@@ -59,6 +63,7 @@
       background:linear-gradient(135deg,#bbf7d0,#86efac);
       border:2px solid var(--good);
       color:#065f46;font-weight:1000;
+      flex:0 0 auto;
     }
     .title{font-weight:1000;font-size:18px;line-height:1}
     .sub{font-weight:850;color:var(--muted);font-size:13px;margin-top:4px}
@@ -68,6 +73,7 @@
       padding:8px 10px;border-radius:999px;
       border:1px solid #e2e8f0;background:#fff;
       font-weight:950;color:var(--muted);
+      user-select:none;
     }
     .pill b{color:var(--ink)}
     .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -77,6 +83,7 @@
       background:var(--accent);color:#fff;
       font-weight:1000;cursor:pointer;
       box-shadow:0 10px 18px rgba(14,165,233,.25);
+      touch-action: manipulation;
     }
     button.secondary{
       background:#f1f5f9;color:var(--ink);
@@ -101,6 +108,7 @@
       border:1px solid #e2e8f0;background:#fff;
       font-weight:1000;color:var(--muted);
       cursor:pointer;user-select:none;
+      touch-action: manipulation;
     }
     .tab.active{
       color:#065f46;border-color:#86efac;background:#f0fdf4;
@@ -169,6 +177,7 @@
       display:grid;place-items:center;
       font-size:11px;font-weight:1000;color:#0b1220;
       border:1px solid rgba(15,23,42,.18);
+      user-select:none;
     }
     .dot.th{background:rgba(34,197,94,.35)}
     .dot.hu{background:rgba(244,114,182,.35)}
@@ -256,6 +265,7 @@
       cursor:pointer;
       outline:none;
       min-width:160px;
+      touch-action: manipulation;
     }
     .answerPick{
       font:inherit;
@@ -267,6 +277,7 @@
       outline:none;
       cursor:pointer;
       min-width:200px;
+      touch-action: manipulation;
     }
     .answerPick.placeholder{border-color:#cbd5e1;background:#f8fafc;color:#0f172a}
     .answerPick.good{border-color:#86efac;background:#dcfce7;color:#065f46}
@@ -311,13 +322,21 @@
       font-weight:1000;font-size:20px;
       position:relative;
       user-select:none;
+      -webkit-user-select:none;
     }
     .box.blank{
       background:#f8fafc;border-color:#cbd5e1;color:#0f172a;
       border-style:dashed;
+      touch-action:none;
     }
     .box.locked{
       background:#fff;border-style:solid;border-color:#e2e8f0;color:#0f172a;
+    }
+    .box.blank.filled{
+      border-style:solid;
+      border-color:#93c5fd;
+      background:#eff6ff;
+      color:#0b3b74;
     }
 
     .bank{
@@ -338,9 +357,11 @@
       cursor:grab;
       box-shadow:0 10px 18px rgba(2,6,23,.08);
       user-select:none;
+      -webkit-user-select:none;
       position:relative;
       padding-left:18px;
       overflow:hidden;
+      touch-action:none; /* critical for mobile pointer drag */
     }
     #seqBank .chip:active{cursor:grabbing; transform: translateY(1px);}
     #seqBank .chip::before{
@@ -350,6 +371,11 @@
       width:8px;
       border-radius:999px;
       background: var(--beforeBg, rgba(15,23,42,.14));
+    }
+    #seqBank .chip.sel{
+      outline:4px solid rgba(14,165,233,.35);
+      box-shadow:0 14px 24px rgba(14,165,233,.18);
+      transform: translateY(-1px);
     }
 
     .ruleBubble{
@@ -375,6 +401,46 @@
     @keyframes fall{ to{ transform:translateY(110vh) rotate(720deg); } }
 
     .footer{margin-top:12px;text-align:right;color:#64748b;font-weight:800;font-size:13px}
+
+    /* ===== Mobile layout tweaks ===== */
+    @media (max-width:520px){
+      body{padding:10px}
+      .content{padding:12px}
+      .topbar{padding:12px}
+      .btns button{padding:11px 12px}
+      .pvCols{grid-template-columns: repeat(2, 1fr)}
+      .col .body{min-height:78px}
+      .box{width:84px;height:56px;font-size:18px}
+      #seqBank .chip{min-width:86px;height:54px;font-size:18px}
+      .pill{padding:7px 9px}
+    }
+
+    /* ===== Floating drag ghost (mobile) ===== */
+    .dragGhost{
+      position:fixed;
+      left:0;top:0;
+      z-index:99999;
+      pointer-events:none;
+      transform:translate(-50%,-50%);
+      border-radius:14px;
+      border:2px solid rgba(15,23,42,.12);
+      box-shadow:0 18px 30px rgba(2,6,23,.18);
+      padding:0 16px 0 24px;
+      height:52px;
+      display:grid;place-items:center;
+      font-weight:1000;
+      font-size:20px;
+      background:var(--chipBg, #fff);
+      color:var(--chipInk, #0f172a);
+    }
+    .dragGhost::before{
+      content:"";
+      position:absolute;
+      left:10px; top:10px; bottom:10px;
+      width:8px;
+      border-radius:999px;
+      background: var(--beforeBg, rgba(15,23,42,.14));
+    }
   </style>
 </head>
 
@@ -542,7 +608,11 @@
 
             <div class="seqBoard">
               <p class="seqTitle" id="seqQuestion">Fill in the missing numbers. Arrange the pattern correctly!</p>
-              <div class="hint" style="margin-bottom:10px">Drag the coloured number cards into the empty boxes. (Click a box to clear it.)</div>
+              <div class="hint" style="margin-bottom:10px">
+                Drag the coloured number cards into the empty boxes.
+                <span style="font-weight:900">(Mobile tip: tap a coloured card, then tap a blank box.)</span>
+                (Tap a filled blank box to clear it.)
+              </div>
 
               <div class="track" id="seqTrack"></div>
               <div class="bank" id="seqBank"></div>
@@ -1024,8 +1094,7 @@
     const loLine = Math.min(mlBase, mlAnswer) - padSteps*mlTick;
     const hiLine = Math.max(mlBase, mlAnswer) + padSteps*mlTick;
 
-    // ✅ CRITICAL FIX (works for -1000, +500, etc):
-    // Align min/max to the SAME remainder class as mlBase, and if negative, bump by mlTick
+    // ✅ keeps correct positioning for all steps
     const rem = ((mlBase % mlTick) + mlTick) % mlTick;
     function alignToBaseRemainder(x){
       const r = ((x % mlTick) + mlTick) % mlTick;
@@ -1033,7 +1102,7 @@
     }
 
     let minCand = alignToBaseRemainder(loLine);
-    while(minCand < 0) minCand += mlTick;  // keep remainder while making non-negative
+    while(minCand < 0) minCand += mlTick;
     mlMin = minCand;
 
     let maxCand = alignToBaseRemainder(hiLine);
@@ -1156,7 +1225,7 @@
   }
 
   // =========================================================
-  //  MODE 2: NUMBER TRAIN SEQUENCES
+  //  MODE 2: NUMBER TRAIN SEQUENCES (Mobile-friendly)
   // =========================================================
   const seqTrack = document.getElementById('seqTrack');
   const seqBank = document.getElementById('seqBank');
@@ -1172,6 +1241,61 @@
   let blanks = new Set();
   let bankVals = [];
   let ruleText = "";
+
+  // mobile/tap placing
+  let selectedChipVal = null;
+  let selectedChipEl = null;
+
+  function setSelectedChip(val, el){
+    selectedChipVal = val;
+    selectedChipEl = el;
+    [...seqBank.querySelectorAll('.chip')].forEach(c=>c.classList.toggle('sel', c === el));
+  }
+  function clearSelectedChip(){
+    selectedChipVal = null;
+    selectedChipEl = null;
+    [...seqBank.querySelectorAll('.chip')].forEach(c=>c.classList.remove('sel'));
+  }
+
+  function findBlankBoxes(){
+    return [...seqTrack.querySelectorAll('.box.blank')];
+  }
+  function placeValueIntoBox(boxEl, val){
+    if(!boxEl || !boxEl.classList.contains('blank')) return;
+
+    const blanksNow = findBlankBoxes();
+    const already = blanksNow.some(x => x.dataset.value === String(val));
+
+    if(already){
+      const from = blanksNow.find(x => x.dataset.value === String(val));
+      if(from && from !== boxEl){
+        const tmpVal = boxEl.dataset.value || "";
+        const tmpText = boxEl.textContent;
+
+        boxEl.dataset.value = String(val);
+        boxEl.textContent = String(val);
+
+        from.dataset.value = tmpVal;
+        from.textContent = tmpVal ? tmpText : "_____";
+      }
+    }else{
+      boxEl.dataset.value = String(val);
+      boxEl.textContent = String(val);
+    }
+
+    // visuals
+    findBlankBoxes().forEach(b=>{
+      const filled = !!b.dataset.value;
+      b.classList.toggle('filled', filled);
+    });
+  }
+
+  function clearBox(boxEl){
+    if(!boxEl.classList.contains('blank')) return;
+    boxEl.dataset.value = "";
+    boxEl.textContent = "_____";
+    boxEl.classList.remove('filled');
+  }
 
   function chooseRule(){
     const type = seqType.value;
@@ -1195,6 +1319,8 @@
   }
 
   function buildSequence(){
+    clearSelectedChip();
+
     const blankCount = (seqDiff.value === "easy") ? 2 : (seqDiff.value === "med") ? 3 : 4;
     const rule = chooseRule();
     const len = 9;
@@ -1229,12 +1355,101 @@
 
     renderSeqUI();
     seqMsg.className = "msg";
-    seqMsg.innerHTML = `Drag the coloured number cards into the empty boxes. Then press <b>Check</b>.`;
+    seqMsg.innerHTML = `Drag the coloured number cards into the empty boxes. <span style="font-weight:900">On mobile: tap a coloured card, then tap a blank box.</span> Then press <b>Check</b>.`;
+  }
+
+  // --- Touch drag (Pointer Events) for chips ---
+  const drag = { active:false, pid:null, val:null, ghost:null, startX:0, startY:0, moved:false };
+
+  function makeGhostFromChip(chipEl, x, y){
+    const g = document.createElement('div');
+    g.className = 'dragGhost';
+    // copy CSS vars for color stripe
+    const bg = chipEl.style.getPropertyValue('--chipBg') || '#fff';
+    const ink = chipEl.style.getPropertyValue('--chipInk') || '#0f172a';
+    const before = chipEl.style.getPropertyValue('--beforeBg') || 'rgba(15,23,42,.14)';
+    g.style.setProperty('--chipBg', bg);
+    g.style.setProperty('--chipInk', ink);
+    g.style.setProperty('--beforeBg', before);
+    g.textContent = chipEl.dataset.value;
+    document.body.appendChild(g);
+    positionGhost(g, x, y);
+    return g;
+  }
+
+  function positionGhost(ghost, x, y){
+    ghost.style.left = x + 'px';
+    ghost.style.top  = y + 'px';
+  }
+
+  function closestBlankBoxFromPoint(x, y){
+    let el = document.elementFromPoint(x, y);
+    while(el && el !== document.body){
+      if(el.classList && el.classList.contains('box') && el.classList.contains('blank')) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  function startChipPointerDrag(e, chipEl){
+    // Only for touch/stylus OR when user drags; also works on desktop nicely.
+    e.preventDefault();
+    chipEl.setPointerCapture(e.pointerId);
+
+    drag.active = true;
+    drag.pid = e.pointerId;
+    drag.val = chipEl.dataset.value;
+    drag.startX = e.clientX;
+    drag.startY = e.clientY;
+    drag.moved = false;
+    drag.ghost = makeGhostFromChip(chipEl, e.clientX, e.clientY);
+
+    // if user was in "tap select" mode, keep the highlight too
+    setSelectedChip(chipEl.dataset.value, chipEl);
+  }
+
+  function moveChipPointerDrag(e){
+    if(!drag.active || drag.pid !== e.pointerId) return;
+    const dx = Math.abs(e.clientX - drag.startX);
+    const dy = Math.abs(e.clientY - drag.startY);
+    if(dx + dy > 6) drag.moved = true;
+    if(drag.ghost) positionGhost(drag.ghost, e.clientX, e.clientY);
+
+    const box = closestBlankBoxFromPoint(e.clientX, e.clientY);
+    // optional: visual hint
+    findBlankBoxes().forEach(b => b.style.outline = "none");
+    if(box) box.style.outline = "3px dashed rgba(14,165,233,.55)";
+  }
+
+  function endChipPointerDrag(e){
+    if(!drag.active || drag.pid !== e.pointerId) return;
+
+    findBlankBoxes().forEach(b => b.style.outline = "none");
+
+    const dropBox = closestBlankBoxFromPoint(e.clientX, e.clientY);
+    if(dropBox && drag.val){
+      placeValueIntoBox(dropBox, drag.val);
+      // keep selected for multi-place? (usually not needed). We’ll clear after a successful drop.
+      clearSelectedChip();
+    } else {
+      // if no drop, keep tap-selection so user can tap a blank box next
+      // (only if they didn't actually drag much)
+      if(drag.moved) {
+        // dragged but didn't drop anywhere: keep selection, but no ghost.
+      }
+    }
+
+    if(drag.ghost){ drag.ghost.remove(); drag.ghost = null; }
+
+    drag.active = false;
+    drag.pid = null;
+    drag.val = null;
   }
 
   function renderSeqUI(){
     seqTrack.innerHTML = "";
     seqBank.innerHTML = "";
+    clearSelectedChip();
 
     for(let i=0;i<seq.length;i++){
       const b = document.createElement('div');
@@ -1251,6 +1466,7 @@
         b.dataset.value = String(seq[i]);
       }
 
+      // Desktop drag & drop support (kept)
       b.addEventListener('dragover', (e)=>{
         if(!b.classList.contains('blank')) return;
         e.preventDefault();
@@ -1264,32 +1480,33 @@
         b.style.outline = "none";
         const val = e.dataTransfer.getData('text/plain');
         if(!val) return;
+        placeValueIntoBox(b, val);
+        clearSelectedChip();
+      });
 
-        const blanksNow = [...seqTrack.querySelectorAll('.box.blank')];
-        const already = blanksNow.some(x => x.dataset.value === val);
-
-        if(already){
-          const from = blanksNow.find(x => x.dataset.value === val);
-          if(from && from !== b){
-            const tmpVal = b.dataset.value;
-            const tmpText = b.textContent;
-
-            b.dataset.value = val;
-            b.textContent = val;
-
-            from.dataset.value = tmpVal || "";
-            from.textContent = tmpVal ? tmpText : "_____";
-          }
-        }else{
-          b.dataset.value = val;
-          b.textContent = val;
+      // Mobile tap-to-place
+      b.addEventListener('pointerdown', (e)=>{
+        if(!b.classList.contains('blank')) return;
+        // If a chip is selected, place it
+        if(selectedChipVal){
+          e.preventDefault();
+          placeValueIntoBox(b, selectedChipVal);
+          clearSelectedChip();
+          return;
+        }
+        // else allow tap-to-clear if already filled
+        if(b.dataset.value){
+          e.preventDefault();
+          clearBox(b);
         }
       });
 
+      // Also allow click-to-clear (desktop)
       b.addEventListener('click', ()=>{
         if(!b.classList.contains('blank')) return;
-        b.dataset.value = "";
-        b.textContent = "_____";
+        if(b.dataset.value){
+          clearBox(b);
+        }
       });
 
       seqTrack.appendChild(b);
@@ -1299,7 +1516,7 @@
       const c = document.createElement('div');
       c.className = 'chip';
       c.textContent = String(v);
-      c.draggable = true;
+      c.draggable = true; // desktop HTML5 DnD
       c.dataset.value = String(v);
 
       const hue = (idx * 55) % 360;
@@ -1307,10 +1524,26 @@
       c.style.setProperty('--chipInk', `hsl(${hue} 55% 22%)`);
       c.style.setProperty('--beforeBg', `hsl(${hue} 85% 55%)`);
 
+      // Desktop dragstart
       c.addEventListener('dragstart', (e)=>{
         e.dataTransfer.setData('text/plain', c.dataset.value);
         e.dataTransfer.effectAllowed = 'move';
       });
+
+      // Tap select (mobile) + also nice on desktop
+      c.addEventListener('click', ()=>{
+        if(selectedChipEl === c){
+          clearSelectedChip();
+        }else{
+          setSelectedChip(c.dataset.value, c);
+        }
+      });
+
+      // Pointer drag (mobile/stylus/finger)
+      c.addEventListener('pointerdown', (e)=> startChipPointerDrag(e, c));
+      c.addEventListener('pointermove', moveChipPointerDrag);
+      c.addEventListener('pointerup', endChipPointerDrag);
+      c.addEventListener('pointercancel', endChipPointerDrag);
 
       seqBank.appendChild(c);
     });
